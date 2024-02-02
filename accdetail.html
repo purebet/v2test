@@ -1,0 +1,75 @@
+<html>
+    <head>
+        <title> Details of bet </title>
+    </head>
+    <body onload = "populate()">
+        <h1>pubkey of account: <span id = "pubkey"></span></h1>
+        <h2>sport: <span id = "sport"></span></h2>
+        <h2>league: <span id = "league"></span></h2>
+        <h2>event: <span id = "event"></span></h2>
+        <h2>period: <span id = "period"></span></h2>
+        <h2>mkt: <span id = "mkt"></span></h2>
+        <h2>player: <span id = "player"></span></h2>
+        <h3>stake0: <span id = "stake0"></span>, stake1: <span id = "stake1"></span></h3>
+        <h3>odds0: <span id = "odds0"></span>, odds1: <span id = "odds1"></span></h3>
+        <h3>bettor0: <span id = "bettor0"></span>, bettor1: <span id = "bettor1"></span></h3>
+        <p> rent exemption payer: <span id = "rent"></span></p>
+        <p> time: <span id = "time"></span></p>
+        <p> is free bet: <span id = "freebet"></span></p>
+        <ol id = "data" start = "0"></ol>
+
+        <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+        <script>
+            var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
+            function popEl(id, value){
+                document.getElementById(id).innerHTML = value;
+            }
+            function lilEndInt(bytes){
+                let output = 0;
+                for(let pow = 0; pow < bytes.length; pow++){
+                    output = output + bytes[pow] * 256**pow;
+                }
+                return output;
+            }
+            function b58str(data, start){
+                return new solanaWeb3.PublicKey(data.slice(start, start + 32)).toBase58();
+            }
+            async function populate(){
+                var pubkey = window.location.href.split("?")[1];
+                document.getElementById("pubkey").innerHTML = pubkey;
+
+                var keyform = new solanaWeb3.PublicKey(pubkey);
+                var info = await connection.getAccountInfo(keyform);
+
+                popEl("sport", info.data[0]);
+                popEl("league", lilEndInt(info.data.slice(1, 5)));
+                popEl("event", lilEndInt(info.data.slice(5, 13)));
+                popEl("period", info.data[13]);
+                popEl("mkt", lilEndInt(info.data.slice(14, 16)));
+                popEl("player", info.data.slice(16, 20));
+
+                let stake0 = lilEndInt(info.data.slice(20, 28)) / 1000000;
+                let stake1 = lilEndInt(info.data.slice(28, 36)) / 1000000;
+                let odds0 = (stake0 + stake1) / stake0;
+                let odds1 = (stake0 + stake1) / stake1;
+                popEl("stake0", stake0);
+                popEl("stake1", stake1);
+                popEl("odds0", odds0);
+                popEl("odds1", odds1);
+                popEl("bettor0", b58str(info.data, 36));
+                popEl("bettor1", b58str(info.data, 68));
+
+                popEl("rent", b58str(info.data, 100));
+                popEl("time", "incorrect for now but " + new Date(lilEndInt(info.data.slice(132, 140))));
+                popEl("freebet", info.data[140] == 1 ? "Yes" : "No");
+                  
+                var data = document.getElementById("data");
+                for(var x = 0; x < info.data.length; x++){
+                    var le = document.createElement("li");
+                    le.innerHTML = info.data[x];
+                    data.appendChild(le);  
+                }
+            }
+        </script>
+    </body>
+</html>

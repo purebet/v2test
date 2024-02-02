@@ -1,0 +1,31 @@
+<html>
+    <head>
+        <title> View bets </title>
+    </head>
+    <body>
+        <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+        
+        <input type = "text" id = "programID" value = "BXPq5tkDUzuTnB8TkPqESn5ZoitvnpEqjFP6PhzbHtsN"> 
+        <button onclick = "showAccs()"> Click this button to see all the accounts of the program </button>
+        <div id = "display"> </div>
+        <h1 id = "status"></h1>
+        <script>
+            var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
+            async function showAccs(){
+                var programID = new solanaWeb3.PublicKey(document.getElementById("programID").value);
+                var display = document.getElementById("display");
+                var accs = await connection.getProgramAccounts(programID, {dataSlice: {length: 0, offset: 0}});
+                for(var x = 0; x < accs.length; x++){
+                    var h1 = document.createElement("h1");
+                    var link = document.createElement("a");
+                    link.innerHTML = accs[x].pubkey.toBase58();
+                    link.setAttribute("href", "accdetail.html?" + accs[x].pubkey.toBase58());
+                    link.setAttribute("target", "_blank");
+                    h1.appendChild(link);
+                    display.appendChild(h1);
+                }
+                document.getElementById("status").innerHTML = "The function was called. ";
+            }
+        </script>
+    </body>
+</html>

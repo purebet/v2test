@@ -1,0 +1,154 @@
+<html>
+    <head>
+        <title> pbv2 start bet </title>
+    </head>
+    <body>
+        <button onclick = "window.solana.connect()"> Connect Wallet </button>
+        <h2> Sport (number 0 - 255)</h2>
+        <input type = "number" id = "sport" value = "1" />
+
+        <h2> League (number 0 to 2^32 - 1</h2>
+        <input type = "number" id = "league" value = "2" />
+
+        <h2> Event (number 0 to 2^64 - 1) </h2>
+        <input type = "number" id = "event" value = "3" />
+
+        <h2> Period (number 0 - 255) </h2>
+        <input type = "number" id = "period" value = "4" />
+
+        <h2> mkt (number 0 - 65536) </h2>
+        <input type = "number" id = "mkt" value = "5" />
+
+        <h2> player name (string or empty) </h2>
+        <input type = "text" id = "player" value = "firstname lastname" />
+
+        <h3> stake (stake * odds in 0 to 2^64 - 1)</h3>
+        <input type = "number" id = "stake" value = "6" />
+
+        <h3> odds (stake * odds in 0 to 2^64 - 1)</h3>
+        <input type = "number" id = "odds" value = "7" />
+        
+        <h3> side (0 or 1) </h3>
+        <input type = "number" id = "side" value = "0" />
+
+        <button onclick = "bet()"> Place Bet </button>
+        <h1> <a id = "sig" target = "_blank"> tx sig shows up here</a></h1>
+
+        <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+        <script>
+            var programID = new solanaWeb3.PublicKey("BXPq5tkDUzuTnB8TkPqESn5ZoitvnpEqjFP6PhzbHtsN");
+            var pool = new solanaWeb3.PublicKey("7YqdqC6J4ThgEXi8WJv4kNhCUuirvABhND8kw1cCeE6X");
+            var tokenProgram = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+            var mint = new solanaWeb3.PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
+            var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
+
+            function numToBytes(num, bytes){
+                let output = [0, 0, 0, 0, 0, 0, 0, 0];
+                for(let pow = 7; pow >= 0; pow--){
+                    output[pow] = Math.floor(num / 256**pow);
+                    num = num % 256**pow;
+                }
+                return output.slice(0, bytes);
+            }
+
+            function nameToBytes(name){
+                let words = name.split(" ");
+                if(words.length == 0){ //no name, not a player props bet
+                    return [0, 0, 0, 0];
+                }
+                else if(words.length == 1){//someone only has a first name
+                    return [name.charCodeAt(0), 0, 0, 0]
+                }
+                else{
+                    if(words.length > 2){ //last name with multiple words
+                        words[1] = words.slice(1).join(" ");
+                    }
+                    let output = [words[0].charCodeAt(0), words[1].charCodeAt(0), words[1].charCodeAt(1)]
+                    if(words[1].length == 2){ //2 letter last name
+                        output.push(0);
+                        return output;
+                    }
+                    else{
+                        output.push(words[1].charCodeAt(2));
+                        return output;
+                    }
+                }
+            }
+
+            function instrData(){
+                let data = [];
+                let ids = [
+                    {name: "sport", bytes: 1}, 
+                    {name: "league", bytes: 4}, 
+                    {name: "event", bytes: 8},
+                    {name: "period", bytes: 1},
+                    {name: "mkt", bytes: 2}
+                ];
+                for(let i = 0; i < ids.length; i++){
+                    let value = document.getElementById(ids[i].name).value;
+                    data = data.concat(numToBytes(value, ids[i].bytes));
+                }
+                data = data.concat(nameToBytes(document.getElementById("player").value));
+                let stake0, stake1;
+                let userStake = document.getElementById("stake").value;
+                let odds = document.getElementById("odds").value;
+                let side = document.getElementById("side").value;
+                if(side == 0){
+                    stake0 = numToBytes(userStake * 1000000);
+                    stake1 = numToBytes(userStake * (odds - 1) * 1000000);
+                }
+                else{
+                    stake0 = numToBytes(userStake * (odds - 1) * 1000000);
+                    stake1 = numToBytes(userStake * 1000000);
+                }
+                data = data.concat(stake0).concat(stake1);
+                data.push(parseInt(side));
+                return data;
+            }
+
+            async function bet(){
+                let transaction = new solanaWeb3.Transaction();
+                let rentExemptVal = 1000000000 * 0.00187224;
+                let seed = 'purebet' + Math.random() * 1000000000000;
+                let newAcc = await solanaWeb3.PublicKey.createWithSeed(window.solana.publicKey, seed, programID);
+                let instr = solanaWeb3.SystemProgram.createAccountWithSeed({
+                    fromPubkey: window.solana.publicKey,
+                    basePubkey: window.solana.publicKey,
+                    seed: seed,
+                    newAccountPubkey: newAcc,
+                    lamports: rentExemptVal,
+                    space: 141,
+                    programId: programID,
+                });
+                transaction.add(instr);
+
+                let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
+                let bettorAssocTokAddr = callForATA.value[0].pubkey;
+                
+                let betInstr = new solanaWeb3.TransactionInstruction({
+                    keys: [
+                        {pubkey: newAcc, isSigner: false, isWritable: true },
+                        {pubkey: tokenProgram, isSigner: false, isWritable: false},
+                        {pubkey: bettorAssocTokAddr, isSigner: false, isWritable: true },
+                        {pubkey: pool, isSigner: false, isWritable: true},
+                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
+                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
+                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
+                    ],
+                    programId: programID,
+                    data: new Uint8Array(instrData()),
+                });
+                transaction.add(betInstr);
+                transaction.feePayer = window.solana.publicKey;
+                let blockInfo = await connection.getLatestBlockhash(); 
+                transaction.recentBlockhash = blockInfo.blockhash;
+                let signed = await window.solana.signTransaction(transaction);
+                let signature = await connection.sendRawTransaction(signed.serialize());
+                await connection.confirmTransaction(signature);
+                document.getElementById("sig").setAttribute("href", "https://explorer.solana.com/tx/" + signature + "?cluster=devnet");
+                document.getElementById("sig").innerHTML = signature;
+            }
+        </script>
+
+    </body>
+</html>
