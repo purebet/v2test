@@ -34,6 +34,64 @@
             function b58str(data, start){
                 return new solanaWeb3.PublicKey(data.slice(start, start + 32)).toBase58();
             }
+            function mktType(mkt){
+                if(mkt == 0){
+                    return "moneyline";
+                }
+                else if(mkt == 1){
+                    return "home wins/does not win";
+                }
+                else if(mkt == 2){
+                    return "away wins/does not win";
+                }
+                else if(mkt == 3){
+                    return "draw or not draw";
+                }
+                else if(mkt > 1000){
+                    let line = (mkt - 1000) / 2;
+                    return "o/u " + line;
+                }
+                else{
+                    let line = (mkt - 200) / 2;
+                    return "home " + line + " / away " + line * -1; 
+                }
+            }
+            function sport(id){
+                let idToSport = {
+                    3: "baseball",
+                    4: "basketball",
+                    6: "boxing",
+                    8: "cricket",
+                    15: "american football",
+                    19: "hockey",
+                    22: "mma",
+                    29: "soccer",
+                    33: "tennis"
+                };
+                if(idToSport[id] != null){
+                    return idToSport[id];
+                }
+                else{
+                    return id;
+                }
+            }
+            function formatName(bytes){
+                return String.fromCharCode(bytes[0]) + 
+                    ". " + 
+                    String.fromCharCode(bytes[1]) +
+                    String.fromCharCode(bytes[2]) +
+                    String.fromCharCode(bytes[3])
+            }
+            function i64(bytes){ //must be positive timestamps
+                console.log(bytes);
+                let output = 0;
+                for(let i = 0; i < bytes.length - 1; i++){
+                    let pow = 7 - i;
+
+                }
+
+                return lilEndInt(bytes); 
+            }
             async function populate(){
                 var pubkey = window.location.href.split("?")[1];
                 document.getElementById("pubkey").innerHTML = pubkey;
@@ -41,12 +99,12 @@
                 var keyform = new solanaWeb3.PublicKey(pubkey);
                 var info = await connection.getAccountInfo(keyform);
 
-                popEl("sport", info.data[0]);
+                popEl("sport", sport(info.data[0]));
                 popEl("league", lilEndInt(info.data.slice(1, 5)));
                 popEl("event", lilEndInt(info.data.slice(5, 13)));
                 popEl("period", info.data[13]);
-                popEl("mkt", lilEndInt(info.data.slice(14, 16)));
-                popEl("player", info.data.slice(16, 20));
+                popEl("mkt", mktType(lilEndInt(info.data.slice(14, 16))));
+                popEl("player", formatName(info.data.slice(16, 20)));
 
                 let stake0 = lilEndInt(info.data.slice(20, 28)) / 1000000;
                 let stake1 = lilEndInt(info.data.slice(28, 36)) / 1000000;
@@ -60,8 +118,8 @@
                 popEl("bettor1", b58str(info.data, 68));
 
                 popEl("rent", b58str(info.data, 100));
-                popEl("time", "incorrect for now but " + new Date(lilEndInt(info.data.slice(132, 140))));
-                popEl("freebet", info.data[140] == 1 ? "Yes" : "No");
+                popEl("time", new Date(lilEndInt(info.data.slice(133, 141)) * 1000));
+                popEl("freebet", info.data[132] == 1 ? "Yes" : "No");
                   
                 var data = document.getElementById("data");
                 for(var x = 0; x < info.data.length; x++){
