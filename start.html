@@ -41,7 +41,8 @@
             var tokenProgram = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
             var mint = new solanaWeb3.PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
             var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
-
+            var burner = solanaWeb3.Keypair.fromSecretKey(new Uint8Array([33, 2, 27, 57, 123, 10, 206, 228, 205, 65, 217, 174, 205, 73, 187, 239, 28, 155, 245, 64, 235, 186, 149, 174, 16, 123, 162, 33, 164, 168, 76, 19, 150, 33, 165, 201, 131, 31, 183, 88, 154, 249, 6, 48, 254, 127, 127, 103, 142, 248, 150, 170, 79, 1, 21, 41, 238, 134, 53, 215, 8, 247, 190, 153]));
+            
             function numToBytes(num, bytes){
                 let output = [0, 0, 0, 0, 0, 0, 0, 0];
                 for(let pow = 7; pow >= 0; pow--){
@@ -105,14 +106,13 @@
                 data.push(parseInt(side));
                 return data;
             }
-
-            async function bet(){
-                let transaction = new solanaWeb3.Transaction();
+            async function genTx(payer){
+                //move the below to genAcc(), call with parameter window.solana.publicKey
                 let rentExemptVal = 1000000000 * 0.00187224;
                 let seed = 'purebet' + Math.random() * 1000000000000;
                 let newAcc = await solanaWeb3.PublicKey.createWithSeed(window.solana.publicKey, seed, programID);
                 let instr = solanaWeb3.SystemProgram.createAccountWithSeed({
-                    fromPubkey: window.solana.publicKey,
+                    fromPubkey: payer,
                     basePubkey: window.solana.publicKey,
                     seed: seed,
                     newAccountPubkey: newAcc,
@@ -120,8 +120,8 @@
                     space: 141,
                     programId: programID,
                 });
-                transaction.add(instr);
-
+                
+            
                 let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
                 let bettorAssocTokAddr = callForATA.value[0].pubkey;
                 
@@ -133,21 +133,50 @@
                         {pubkey: pool, isSigner: false, isWritable: true},
                         {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
                         {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
-                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
+                        {pubkey: payer, isSigner: true, isWritable: true },
                     ],
                     programId: programID,
                     data: new Uint8Array(instrData()),
                 });
+                
+                let transaction = new solanaWeb3.Transaction();
+                transaction.add(instr);
                 transaction.add(betInstr);
-                transaction.feePayer = window.solana.publicKey;
+                transaction.feePayer = payer;
                 let blockInfo = await connection.getLatestBlockhash(); 
                 transaction.recentBlockhash = blockInfo.blockhash;
+                return transaction;
+            }
+            async function provideSol(){
+                // have a private key here, in production would be a separate server
+                let tx = await genTx(burner.publicKey);
+                //sign with payer private key https://solana-labs.github.io/solana-web3.js/classes/Transaction.html#partialSign
+                tx.partialSign(burner);
+                //return tx to bet()
+                return tx;
+                //later when moving to a server, do serialization of the unsigned tx here, 
+                // send it to server for signing, and then send the serialized signed version back and then unserialize it
+            }
+            
+            async function bet(){
+                //check user's sol balance. If lamports less than 1000000000 * 0.00187224 + 500, call provideSol()
+                // otherwise call userBet()
+                // sign and send tx returned from either call here
+                //put below in bet()
+                let transaction = null;
+                if(await connection.getBalance(window.solana.publicKey) < 1000000000 * 0.00187224 + 500){
+                    transaction = await provideSol();
+                }
+                else{
+                    transaction = await genTx(window.solana.publicKey);
+                }
                 let signed = await window.solana.signTransaction(transaction);
                 let signature = await connection.sendRawTransaction(signed.serialize());
                 await connection.confirmTransaction(signature);
                 document.getElementById("sig").setAttribute("href", "https://explorer.solana.com/tx/" + signature + "?cluster=devnet");
                 document.getElementById("sig").innerHTML = signature;
             }
+
         </script>
 
     </body>
