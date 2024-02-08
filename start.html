@@ -76,6 +76,13 @@
                     }
                 }
             }
+            function stringToBytes(str){
+                let output = [];
+                for(let i = 0; i < str.length; i++){
+                    output.push(str.charCodeAt(i));
+                }
+                return new Uint8Array(output);
+            }
 
             function instrData(){
                 let data = [];
@@ -139,10 +146,18 @@
                     programId: programID,
                     data: new Uint8Array(instrData()),
                 });
+
+                let memo = new solanaWeb3.TransactionInstruction({
+                    keys: [{ pubkey: window.solana.publicKey, isSigner: true, isWritable: true }],
+                    data: stringToBytes("{\"bet\": stake, \"at\": odds, \"on\": \"mkt name\", \"in\": \"event name\"}"),
+                    programId: new solanaWeb3.PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
+                });
+
                 
                 let transaction = new solanaWeb3.Transaction();
                 transaction.add(instr);
                 transaction.add(betInstr);
+                transaction.add(memo);
                 transaction.feePayer = payer;
                 let blockInfo = await connection.getLatestBlockhash(); 
                 transaction.recentBlockhash = blockInfo.blockhash;

@@ -104,3 +104,6 @@ async function call(){
 }
 
 call();
+//note for building this tx on the frontend
+// accs go source (writable), destination (writable), authority (writable + signer)
+//instr data is 03 for the first byte, and then u64 lil end of transfer amount (times a million for usdc) for rest of bytes
