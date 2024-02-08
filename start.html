@@ -35,9 +35,10 @@
         <h1> <a id = "sig" target = "_blank"> tx sig shows up here</a></h1>
 
         <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+        
         <script>
-            var programID = new solanaWeb3.PublicKey("BXPq5tkDUzuTnB8TkPqESn5ZoitvnpEqjFP6PhzbHtsN");
-            var pool = new solanaWeb3.PublicKey("7YqdqC6J4ThgEXi8WJv4kNhCUuirvABhND8kw1cCeE6X");
+            var programID = new solanaWeb3.PublicKey("9uReBEtnYGYf1oUe4KGSt6kQhsqGE74i17NzRNEDLutn");
+            var pool = new solanaWeb3.PublicKey("3SdgUSptYW5NM4SFUYfJwV3awTG7hYJnc1T1yL519mEZ");
             var tokenProgram = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
             var mint = new solanaWeb3.PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
             var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
@@ -106,7 +107,7 @@
                 data.push(parseInt(side));
                 return data;
             }
-            async function genTx(payer){
+            async function genTx(payer, tokAuth){
                 //move the below to genAcc(), call with parameter window.solana.publicKey
                 let rentExemptVal = 1000000000 * 0.00187224;
                 let seed = 'purebet' + Math.random() * 1000000000000;
@@ -122,16 +123,16 @@
                 });
                 
             
-                let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
-                let bettorAssocTokAddr = callForATA.value[0].pubkey;
+                let callForATA = await connection.getTokenAccountsByOwner(tokAuth, { mint: mint });
+                let source = callForATA.value[0].pubkey;
                 
                 let betInstr = new solanaWeb3.TransactionInstruction({
                     keys: [
                         {pubkey: newAcc, isSigner: false, isWritable: true },
                         {pubkey: tokenProgram, isSigner: false, isWritable: false},
-                        {pubkey: bettorAssocTokAddr, isSigner: false, isWritable: true },
+                        {pubkey: source, isSigner: false, isWritable: true },
                         {pubkey: pool, isSigner: false, isWritable: true},
-                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
+                        {pubkey: tokAuth, isSigner: true, isWritable: true },
                         {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
                         {pubkey: payer, isSigner: true, isWritable: true },
                     ],
@@ -149,7 +150,7 @@
             }
             async function provideSol(){
                 // have a private key here, in production would be a separate server
-                let tx = await genTx(burner.publicKey);
+                let tx = await genTx(burner.publicKey, window.solana.publicKey);
                 //sign with payer private key https://solana-labs.github.io/solana-web3.js/classes/Transaction.html#partialSign
                 tx.partialSign(burner);
                 //return tx to bet()
@@ -164,11 +165,12 @@
                 // sign and send tx returned from either call here
                 //put below in bet()
                 let transaction = null;
+                //check for the existence of tokens of mint CD7pSsX2RzwQpefKzUADyogzSiLkM6thDMzWRusEdteT for free bet
                 if(await connection.getBalance(window.solana.publicKey) < 1000000000 * 0.00187224 + 500){
                     transaction = await provideSol();
                 }
                 else{
-                    transaction = await genTx(window.solana.publicKey);
+                    transaction = await genTx(window.solana.publicKey, window.solana.publicKey);
                 }
                 let signed = await window.solana.signTransaction(transaction);
                 let signature = await connection.sendRawTransaction(signed.serialize());
