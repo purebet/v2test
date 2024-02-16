@@ -10,7 +10,10 @@
         <input type = "number" id = "stake" oninput = "changeOdds()"/>
         <h3> Odds <b id = "odds"></b></h3>
         <p> Identifying information and side will be calculated automatically from account. Onchain program still checks those for correctness though.</p>
+        <button onclick = "window.solana.connect()"> Connect Wallet </button>
+        <p id = "addr"> Wallet addr shows up here </p>
         <button onclick = "place()"> Match this bet </button>
+        <a id = "sig" target = "_blank"> tx sig appears here</a>
         <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
         <script>
             var programID = new solanaWeb3.PublicKey("9uReBEtnYGYf1oUe4KGSt6kQhsqGE74i17NzRNEDLutn");
@@ -20,6 +23,39 @@
             var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
             var blankPubkey = "11111111111111111111111111111111";
             var betData = [];
+
+            function showWallet(){
+                document.getElementById("addr").innerHTML = window.solana.publicKey.toBase58();
+            }
+            window.solana.on("connect", showWallet);
+
+            async function place(){
+                let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
+                let source = callForATA.value[0].pubkey;
+                
+                let betInstr = new solanaWeb3.TransactionInstruction({
+                    keys: [
+                        {pubkey: new solanaWeb3.PublicKey(document.getElementById("acc").value), isSigner: false, isWritable: true },
+                        {pubkey: tokenProgram, isSigner: false, isWritable: false},
+                        {pubkey: source, isSigner: false, isWritable: true },
+                        {pubkey: pool, isSigner: false, isWritable: true},
+                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
+                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true }
+                    ],
+                    programId: programID,
+                    data: new Uint8Array(betData),
+                });
+                let transaction = new solanaWeb3.Transaction();
+                transaction.add(betInstr);
+                transaction.feePayer = window.solana.publicKey;
+                let blockInfo = await connection.getLatestBlockhash(); 
+                transaction.recentBlockhash = blockInfo.blockhash;
+                let signed = await window.solana.signTransaction(transaction);
+                let signature = await connection.sendRawTransaction(signed.serialize());
+                await connection.confirmTransaction(signature);
+                document.getElementById("sig").innerHTML = signature;
+                document.getElementById("sig").setAttribute("href", "https://explorer.solana.com/tx/" + signature + "?cluster=devnet");
+            }
 
             function lilEndInt(bytes){
                 let output = 0;
