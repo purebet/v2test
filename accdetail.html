@@ -3,7 +3,7 @@
         <title> Details of bet </title>
     </head>
     <body onload = "populate()">
-        <h1>pubkey of account: <span id = "pubkey"></span></h1>
+        <h1>pubkey of account: <span id = "pubkey"></span> <button onclick = "copy()"> Copy </button></h1>
         <h2>sport: <span id = "sport"></span></h2>
         <h2>league: <span id = "league"></span></h2>
         <h2>event: <span id = "event"></span></h2>
@@ -21,6 +21,10 @@
         <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
         <script>
             var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
+            function copy() {
+                let copyText = document.getElementById("pubkey");
+                navigator.clipboard.writeText(copyText.innerText);
+            }
             function popEl(id, value){
                 document.getElementById(id).innerHTML = value;
             }
