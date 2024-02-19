@@ -1,0 +1,5 @@
+partial match with different rent payer
+matching a bet on the wrong side
+wrong token account (start, match, partial match)
+wrong pool account (start, match partial match)
+match bet with different fee payer

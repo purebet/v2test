@@ -1,0 +1,143 @@
+<html>
+    <head>
+        <title> partial atch a bet </title>
+    </head>
+    <body>
+        <h1> account to match with </h1>
+        <input type = "text" id = "acc" />
+        <button onclick = "readInfo()"> Read the info of this bet </button>
+        <h2> Stake, must be less than: <b id = "maxStake"></b></h2>
+        <input type = "number" id = "stake"/>
+        <h3> Maximum Odds: <b id = "maxOdds"></b></h3>
+        <h2> Odds: </h2>
+        <input type = "number" id = "odds" /> 
+        <p> Identifying information and side will be calculated automatically from account. Onchain program still checks those for correctness though.</p>
+        <button onclick = "window.solana.connect()"> Connect Wallet </button>
+        <p id = "addr"> Wallet addr shows up here </p>
+        <button onclick = "place()"> partially match this bet </button>
+        <a id = "sig" target = "_blank"> tx sig appears here</a>
+        <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+        <script>
+            var programID = new solanaWeb3.PublicKey("9uReBEtnYGYf1oUe4KGSt6kQhsqGE74i17NzRNEDLutn");
+            var pool = new solanaWeb3.PublicKey("3SdgUSptYW5NM4SFUYfJwV3awTG7hYJnc1T1yL519mEZ");
+            var tokenProgram = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+            var mint = new solanaWeb3.PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
+            var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
+            var blankPubkey = "11111111111111111111111111111111";
+            var betData = [];
+
+            function showWallet(){
+                document.getElementById("addr").innerHTML = window.solana.publicKey.toBase58();
+            }
+            window.solana.on("connect", showWallet);
+
+            function lilEndInt(bytes){
+                let output = 0;
+                for(let pow = 0; pow < bytes.length; pow++){
+                    output = output + bytes[pow] * 256**pow;
+                }
+                return output;
+            }
+
+            async function readInfo(){
+                let pubkey = document.getElementById("acc").value;
+                let keyform = new solanaWeb3.PublicKey(pubkey);
+                let info = await connection.getAccountInfo(keyform);
+                //window.open("accdetail.html?" + pubkey, "accinfo");
+                betData = Array.from(info.data.slice(0, 36));
+                let wallet0 = new solanaWeb3.PublicKey(info.data.slice(36, 68)).toBase58();
+                //let wallet1 = new solanaWeb3.PublicKey(info.data.slice(68, 100)).toBase58();
+                let stake0 = lilEndInt(info.data.slice(20, 28));
+                let stake1 = lilEndInt(info.data.slice(28, 36));
+                let maxOdds, stake;
+                if(wallet0 == blankPubkey){
+                    betData.push(0);
+                    stake = stake0 / 1000000;
+                    maxOdds = (stake0 + stake1) / stake0;
+                }
+                else{
+                    betData.push(1);
+                    stake = stake1 / 1000000;
+                    maxOdds = (stake0 + stake1) / stake1;
+                }
+                document.getElementById("maxStake").innerHTML = stake;
+                document.getElementById("odds").setAttribute("value", maxOdds);
+                document.getElementById("maxOdds").innerHTML = maxOdds;
+            }
+
+            function numToBytes(num, bytes){
+                let output = [0, 0, 0, 0, 0, 0, 0, 0];
+                for(let pow = 7; pow >= 0; pow--){
+                    output[pow] = Math.floor(num / 256**pow);
+                    num = num % 256**pow;
+                }
+                return output.slice(0, bytes);
+            }
+
+            function setBetData(bytes, start, end){
+                for(let i = start; i < end; i++){
+                    betData[i] = bytes[i - start];
+                }
+            }
+
+            async function place(){
+
+                let stake0Bytes, stake1Bytes;
+                let odds = document.getElementById("odds").value;
+                let stake = document.getElementById("stake").value * 1000000;
+                if(betData[36] == 0){
+                    stake0Bytes = numToBytes(stake);
+                    stake1Bytes = numToBytes(stake * (odds - 1));
+                }
+                else{
+                    stake1Bytes = numToBytes(stake);
+                    stake0Bytes = numToBytes(stake * (odds - 1));
+                }
+                setBetData(stake0Bytes, 20, 28);
+                setBetData(stake1Bytes, 28, 36);
+
+                let rentExemptVal = 1000000000 * 0.00187224;
+                let seed = 'purebet' + Math.random() * 1000000000000;
+                let newAcc = await solanaWeb3.PublicKey.createWithSeed(window.solana.publicKey, seed, programID);
+                let instr = solanaWeb3.SystemProgram.createAccountWithSeed({
+                    fromPubkey: window.solana.publicKey,
+                    basePubkey: window.solana.publicKey,
+                    seed: seed,
+                    newAccountPubkey: newAcc,
+                    lamports: rentExemptVal,
+                    space: 141,
+                    programId: programID,
+                });
+
+                let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
+                let source = callForATA.value[0].pubkey;
+                
+                let betInstr = new solanaWeb3.TransactionInstruction({
+                    keys: [
+                        {pubkey: new solanaWeb3.PublicKey(document.getElementById("acc").value), isSigner: false, isWritable: true },
+                        {pubkey: tokenProgram, isSigner: false, isWritable: false},
+                        {pubkey: source, isSigner: false, isWritable: true },
+                        {pubkey: pool, isSigner: false, isWritable: true},
+                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
+                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true }, //just keep rent payer as same better for now
+                        {pubkey: newAcc, isSigner: false, isWritable: true }
+                    ],
+                    programId: programID,
+                    data: new Uint8Array(betData),
+                });
+                let transaction = new solanaWeb3.Transaction();
+                transaction.add(instr); //this is the new account isntr
+                transaction.add(betInstr);
+                transaction.feePayer = window.solana.publicKey;
+                let blockInfo = await connection.getLatestBlockhash(); 
+                transaction.recentBlockhash = blockInfo.blockhash;
+                let signed = await window.solana.signTransaction(transaction);
+                let signature = await connection.sendRawTransaction(signed.serialize());
+                await connection.confirmTransaction(signature);
+                document.getElementById("sig").innerHTML = signature;
+                document.getElementById("sig").setAttribute("href", "https://explorer.solana.com/tx/" + signature + "?cluster=devnet");
+            }
+
+        </script>
+    </body>
+</html>
