@@ -34,6 +34,7 @@
 
         <button onclick = "bet()"> Place Bet </button>
         <h1> <a id = "sig" target = "_blank"> tx sig shows up here</a></h1>
+        <h2 id = "newacc"> new acc shows up here </h2><button onclick = "copy()"> Copy new bet acc </button>
 
         <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
         
@@ -45,6 +46,11 @@
             var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
             var burner = solanaWeb3.Keypair.fromSecretKey(new Uint8Array([33, 2, 27, 57, 123, 10, 206, 228, 205, 65, 217, 174, 205, 73, 187, 239, 28, 155, 245, 64, 235, 186, 149, 174, 16, 123, 162, 33, 164, 168, 76, 19, 150, 33, 165, 201, 131, 31, 183, 88, 154, 249, 6, 48, 254, 127, 127, 103, 142, 248, 150, 170, 79, 1, 21, 41, 238, 134, 53, 215, 8, 247, 190, 153]));
             
+            function copy() {
+                let copyText = document.getElementById("newacc");
+                navigator.clipboard.writeText(copyText.innerText);
+            }
+
             function showWallet(){
                 document.getElementById("addr").innerHTML = window.solana.publicKey.toBase58();
             }
@@ -125,6 +131,7 @@
                 let rentExemptVal = 1000000000 * 0.00187224;
                 let seed = 'purebet' + Math.random() * 1000000000000;
                 let newAcc = await solanaWeb3.PublicKey.createWithSeed(window.solana.publicKey, seed, programID);
+                document.getElementById("newacc").innerHTML = newAcc.toBase58();
                 let instr = solanaWeb3.SystemProgram.createAccountWithSeed({
                     fromPubkey: payer,
                     basePubkey: window.solana.publicKey,

@@ -3,3 +3,5 @@ matching a bet on the wrong side
 wrong token account (start, match, partial match)
 wrong pool account (start, match partial match)
 match bet with different fee payer
+cancel bet with wrong bettor
+cancel a free bet sends tokens to correct bettor
