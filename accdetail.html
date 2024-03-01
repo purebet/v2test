@@ -16,6 +16,7 @@
         <p> rent exemption payer: <span id = "rent"></span></p>
         <p> time: <span id = "time"></span></p>
         <p> is free bet: <span id = "freebet"></span></p>
+        <p> to be aggregated: <span id = "toAggregate"> </span> </p>
         <ol id = "data" start = "0"></ol>
 
         <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
@@ -124,6 +125,7 @@
                 popEl("rent", b58str(info.data, 100));
                 popEl("time", new Date(lilEndInt(info.data.slice(133, 141)) * 1000));
                 popEl("freebet", info.data[132] == 1 ? "Yes" : "No");
+                popEl("toAggregate", info.data[141] == 1 ? "yes" : "no")
                   
                 var data = document.getElementById("data");
                 for(var x = 0; x < info.data.length; x++){

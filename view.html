@@ -11,10 +11,21 @@
         <h1 id = "status"></h1>
         <script>
             var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
+            var filter = {
+                dataSlice: {
+                    length: 0, 
+                    offset: 0
+                },
+                filters: [
+                    {
+                        dataSize: 142
+                    }
+                ]
+            };
             async function showAccs(){
                 var programID = new solanaWeb3.PublicKey(document.getElementById("programID").value);
                 var display = document.getElementById("display");
-                var accs = await connection.getProgramAccounts(programID, {dataSlice: {length: 0, offset: 0}});
+                var accs = await connection.getProgramAccounts(programID, filter);
                 for(var x = 0; x < accs.length; x++){
                     var h1 = document.createElement("h1");
                     var link = document.createElement("a");

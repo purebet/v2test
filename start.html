@@ -32,6 +32,10 @@
         <h3> side (0 or 1) </h3>
         <input type = "number" id = "side" value = "0" />
 
+        <h3> Enter 1 if the bet is to be aggregated, 0 otherwise </h3>
+        <input type = "number" id = "toAggregate" value = "0" />
+        <br>
+        <br>
         <button onclick = "bet()"> Place Bet </button>
         <h1> <a id = "sig" target = "_blank"> tx sig shows up here</a></h1>
         <h2 id = "newacc"> new acc shows up here </h2><button onclick = "copy()"> Copy new bet acc </button>
@@ -124,11 +128,12 @@
                 }
                 data = data.concat(stake0).concat(stake1);
                 data.push(parseInt(side));
+                data.push(parseInt(document.getElementById("toAggregate").value))
                 return data;
             }
             async function genTx(payer, tokAuth){
                 //move the below to genAcc(), call with parameter window.solana.publicKey
-                let rentExemptVal = 1000000000 * 0.00187224;
+                let rentExemptVal = 1000000000 * 0.0018792;
                 let seed = 'purebet' + Math.random() * 1000000000000;
                 let newAcc = await solanaWeb3.PublicKey.createWithSeed(window.solana.publicKey, seed, programID);
                 document.getElementById("newacc").innerHTML = newAcc.toBase58();
@@ -138,7 +143,7 @@
                     seed: seed,
                     newAccountPubkey: newAcc,
                     lamports: rentExemptVal,
-                    space: 141,
+                    space: 142,
                     programId: programID,
                 });
                 
