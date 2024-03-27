@@ -17,6 +17,7 @@
             var tokenProgram = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
             var mint = new solanaWeb3.PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
             var pda = new solanaWeb3.PublicKey("8AbwG4Cbr9DefgeF7P9Pt9RJMA1RS1KVogRWBWh9U8wM");
+            var delay = new solanaWeb3.PublicKey("the delay storage acc key goese here"); // need to change this
             var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
             var blankPubkey = "11111111111111111111111111111111";
 
@@ -48,6 +49,7 @@
                         {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
                         {pubkey: payer, isSigner: false, isWritable: true },
                         {pubkey: pda, isSigner: false, isWritable: true },
+                        {pubkey: delay, isSigner: false, isWritable: false}
                     ],
                     programId: programID,
                     data: new Uint8Array(instrData),
