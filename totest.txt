@@ -10,3 +10,5 @@ partial match with to aggregate true only lets pbmm match
 bets with to aggregate false let any wallet match
 bets with to aggregate false let any wallet partial match
 cancel a matched bet fails
+cancel aggregated bet without cancelation delay account fails
+cancel non aggregated bet without cancelation delay account 
