@@ -3,8 +3,10 @@
     <title> Refunding bets </title>
   </head>
   <body>
+    <button onclick = "window.solana.connect()"> Connect Wallet </button>
+    <p id = "addr"> </p>
     <h1> Enter bet address </h1>
-    <input type = "text" id = "addr" />
+    <input type = "text" id = "acc" />
     <button onclick = "refund()"> Refund this bet </button>
     <h2> The address to return tokens to: <div id = "tokTo"> </div> </h2>
     <h2> The address to return rent exemption to: <div id = "rentTo"> </div> </h2>
@@ -26,10 +28,7 @@
             }
             window.solana.on("connect", showWallet);
 
-            async function cancel(){
-                let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
-                let destination = callForATA.value[0].pubkey;
-
+            async function refund(){
                 let pubkey = document.getElementById("acc").value;
                 let keyform = new solanaWeb3.PublicKey(pubkey);
                 let info = await connection.getAccountInfo(keyform);
@@ -39,7 +38,14 @@
                 let side = new solanaWeb3.PublicKey(betData.slice(36, 68)).toBase58() != blankPubkey ? 0 : 1;
                 let instrData = id.concat([side]);
                 instrData.push(1);
-                let payer = new solanaWeb3.PublicKey(betData.slice(100, 132));
+                let solTo = new solanaWeb3.PublicKey(betData.slice(100, 132));  
+                document.getElementById("rentTo").innerHTML = solTo.toBase58();
+              
+                let tokenTo = new solanaWeb3.PublicKey(accData.slice(1, 2));
+                document.getElementById("tokTo").innerHTML = tokenTo.toBase58();
+              
+                let callForATA = await connection.getTokenAccountsByOwner(tokenTo, { mint: mint });
+                let destination = callForATA.value[0].pubkey;
 
                 let betInstr = new solanaWeb3.TransactionInstruction({
                     keys: [
