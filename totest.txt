@@ -9,3 +9,4 @@ cancel a free bet sends tokens to correct bettor
 partial match with to aggregate true only lets pbmm match
 bets with to aggregate false let any wallet match
 bets with to aggregate false let any wallet partial match
+cancel a matched bet fails
