@@ -12,3 +12,6 @@ bets with to aggregate false let any wallet partial match
 cancel a matched bet fails
 cancel aggregated bet without cancelation delay account fails
 cancel non aggregated bet without cancelation delay account 
+refunding matched bet fails
+refunding sends to correct wallet in normal circumstance
+refunding free bet sends to rent exemption payer
