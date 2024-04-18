@@ -38,6 +38,7 @@
                 let id = betData.slice(0, 20);
                 let side = new solanaWeb3.PublicKey(betData.slice(36, 68)).toBase58() != blankPubkey ? 0 : 1;
                 let instrData = id.concat([side]);
+                instrData.push(1);
                 let payer = new solanaWeb3.PublicKey(betData.slice(100, 132));
 
                 let betInstr = new solanaWeb3.TransactionInstruction({
