@@ -38,12 +38,20 @@
                 let side = new solanaWeb3.PublicKey(betData.slice(36, 68)).toBase58() != blankPubkey ? 0 : 1;
                 let instrData = id.concat([side]);
                 instrData.push(1);
+              
                 let solTo = new solanaWeb3.PublicKey(betData.slice(100, 132));  
                 document.getElementById("rentTo").innerHTML = solTo.toBase58();
-              
-                let tokenTo = new solanaWeb3.PublicKey(accData.slice(1, 2));
+
+                let addrStart = 0;
+                if(betData[132] == 0){
+                  addrStart = side == 0 ? 36 : 68;
+                }
+                else{
+                  addrStart = 100;
+                }
+                let tokenTo = new solanaWeb3.PublicKey(accData.slice(addrStart, addrStart + 32));
                 document.getElementById("tokTo").innerHTML = tokenTo.toBase58();
-              
+                
                 let callForATA = await connection.getTokenAccountsByOwner(tokenTo, { mint: mint });
                 let destination = callForATA.value[0].pubkey;
 
@@ -54,9 +62,8 @@
                         {pubkey: pool, isSigner: false, isWritable: true },
                         {pubkey: destination, isSigner: false, isWritable: true},
                         {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
-                        {pubkey: payer, isSigner: false, isWritable: true },
-                        {pubkey: pda, isSigner: false, isWritable: true },
-                        {pubkey: delay, isSigner: false, isWritable: false}
+                        {pubkey: solTo, isSigner: false, isWritable: true },
+                        {pubkey: pda, isSigner: false, isWritable: true }
                     ],
                     programId: programID,
                     data: new Uint8Array(instrData),
