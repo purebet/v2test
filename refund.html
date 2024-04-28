@@ -1,14 +1,16 @@
 <html>
-    <head>
-        <title> Cancel your bet </title>
-    </head>
-    <body>
-        <button onclick = "window.solana.connect()"> Connect Wallet </button>
-        <p id = "addr"> </p>
-        <h1> address of bet to cancel </h1>
-        <input type = "text" id = "acc" />
-        <button onclick = "cancel()"> Cancel this bet </button>
-        <h1> <a id = "sig" target = "_blank"> tx sig shows up here</a></h1>
+  <head>
+    <title> Refunding bets </title>
+  </head>
+  <body>
+    <button onclick = "window.solana.connect()"> Connect Wallet </button>
+    <p id = "addr"> </p>
+    <h1> Enter bet address </h1>
+    <input type = "text" id = "acc" />
+    <button onclick = "refund()"> Refund this bet </button>
+    <h2> The address to return tokens to: <div id = "tokTo"> </div> </h2>
+    <h2> The address to return rent exemption to: <div id = "rentTo"> </div> </h2>
+    <h1> <a id = "sig" target = "_blank"> tx sig shows up here</a></h1>
 
         <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
         <script>
@@ -26,10 +28,7 @@
             }
             window.solana.on("connect", showWallet);
 
-            async function cancel(){
-                let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
-                let destination = callForATA.value[0].pubkey;
-
+            async function refund(){
                 let pubkey = document.getElementById("acc").value;
                 let keyform = new solanaWeb3.PublicKey(pubkey);
                 let info = await connection.getAccountInfo(keyform);
@@ -38,23 +37,34 @@
                 let id = betData.slice(0, 20);
                 let side = new solanaWeb3.PublicKey(betData.slice(36, 68)).toBase58() != blankPubkey ? 0 : 1;
                 let instrData = id.concat([side]);
-                instrData.push(0);
-                let payer = new solanaWeb3.PublicKey(betData.slice(100, 132));
+                instrData.push(1);
+              
+                let solTo = new solanaWeb3.PublicKey(betData.slice(100, 132));  
+                document.getElementById("rentTo").innerHTML = solTo.toBase58();
 
-                let keysArr = [
-                    {pubkey: keyform, isSigner: false, isWritable: true },
-                    {pubkey: tokenProgram, isSigner: false, isWritable: false},
-                    {pubkey: pool, isSigner: false, isWritable: true },
-                    {pubkey: destination, isSigner: false, isWritable: true},
-                    {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
-                    {pubkey: payer, isSigner: false, isWritable: true },
-                    {pubkey: pda, isSigner: false, isWritable: true }
-                ];
-                if(betData[141] == 1){// to aggregate
-                    keysArr.push({pubkey: delay, isSigner: false, isWritable: false});
+                let addrStart = 0;
+                if(betData[132] == 0){
+                  addrStart = side == 0 ? 36 : 68;
                 }
+                else{
+                  addrStart = 100;
+                }
+                let tokenTo = new solanaWeb3.PublicKey(accData.slice(addrStart, addrStart + 32));
+                document.getElementById("tokTo").innerHTML = tokenTo.toBase58();
+                
+                let callForATA = await connection.getTokenAccountsByOwner(tokenTo, { mint: mint });
+                let destination = callForATA.value[0].pubkey;
+
                 let betInstr = new solanaWeb3.TransactionInstruction({
-                    keys: keysArr,
+                    keys: [
+                        {pubkey: keyform, isSigner: false, isWritable: true },
+                        {pubkey: tokenProgram, isSigner: false, isWritable: false},
+                        {pubkey: pool, isSigner: false, isWritable: true },
+                        {pubkey: destination, isSigner: false, isWritable: true},
+                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
+                        {pubkey: solTo, isSigner: false, isWritable: true },
+                        {pubkey: pda, isSigner: false, isWritable: true }
+                    ],
                     programId: programID,
                     data: new Uint8Array(instrData),
                 });
@@ -71,5 +81,5 @@
             }
 
         </script>
-    </body>
+  </body>
 </html>
