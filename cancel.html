@@ -40,17 +40,20 @@
                 let instrData = id.concat([side]);
                 let payer = new solanaWeb3.PublicKey(betData.slice(100, 132));
 
+                let keysArr = [
+                    {pubkey: keyform, isSigner: false, isWritable: true },
+                    {pubkey: tokenProgram, isSigner: false, isWritable: false},
+                    {pubkey: pool, isSigner: false, isWritable: true },
+                    {pubkey: destination, isSigner: false, isWritable: true},
+                    {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
+                    {pubkey: payer, isSigner: false, isWritable: true },
+                    {pubkey: pda, isSigner: false, isWritable: true }
+                ];
+                if(betData[141] == 1){// to aggregate
+                    keysArr.push({pubkey: delay, isSigner: false, isWritable: false});
+                }
                 let betInstr = new solanaWeb3.TransactionInstruction({
-                    keys: [
-                        {pubkey: keyform, isSigner: false, isWritable: true },
-                        {pubkey: tokenProgram, isSigner: false, isWritable: false},
-                        {pubkey: pool, isSigner: false, isWritable: true },
-                        {pubkey: destination, isSigner: false, isWritable: true},
-                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: true },
-                        {pubkey: payer, isSigner: false, isWritable: true },
-                        {pubkey: pda, isSigner: false, isWritable: true },
-                        {pubkey: delay, isSigner: false, isWritable: false}
-                    ],
+                    keys: keysArr,
                     programId: programID,
                     data: new Uint8Array(instrData),
                 });
