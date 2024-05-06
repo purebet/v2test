@@ -132,7 +132,7 @@
                 let blockInfo = await connection.getLatestBlockhash(); 
                 transaction.recentBlockhash = blockInfo.blockhash;
                 let signed = await window.solana.signTransaction(transaction);
-                let signature = await connection.sendRawTransaction(signed.serialize());
+                let signature = await connection.sendRawTransaction(signed.serialize(), {skipPreflight: true});
                 await connection.confirmTransaction(signature);
                 document.getElementById("sig").innerHTML = signature;
                 document.getElementById("sig").setAttribute("href", "https://explorer.solana.com/tx/" + signature + "?cluster=devnet");
