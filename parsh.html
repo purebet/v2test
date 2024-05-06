@@ -96,7 +96,7 @@
                 setBetData(stake0Bytes, 20, 28);
                 setBetData(stake1Bytes, 28, 36);
 
-                let rentExemptVal = 1000000000 * 0.00187224;
+                let rentExemptVal = 1000000000 * 0.0018792;
                 let seed = 'purebet' + Math.random() * 1000000000000;
                 let newAcc = await solanaWeb3.PublicKey.createWithSeed(window.solana.publicKey, seed, programID);
                 let instr = solanaWeb3.SystemProgram.createAccountWithSeed({
@@ -105,7 +105,7 @@
                     seed: seed,
                     newAccountPubkey: newAcc,
                     lamports: rentExemptVal,
-                    space: 141,
+                    space: 142,
                     programId: programID,
                 });
 
