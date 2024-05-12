@@ -1,0 +1,84 @@
+<html>
+    <head>
+        <title> grade a bet </title>
+    </head>
+    <body>
+        <button onclick = "window.solana.connect()"> Connect Wallet </button>
+        <p id = "addr"> </p>
+        <h1> address of bet to grade </h1>
+        <input type = "text" id = "acc" />
+        <h2> Grading signal (0, 1, or 2-255 for a push)</h2>
+        <input type = "text" id = "signal" />
+        <button onclick = "grade()"> grade this bet </button>
+        <h1> <a id = "sig" target = "_blank"> tx sig shows up here</a></h1>
+
+        <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+        <script>
+            var programID = new solanaWeb3.PublicKey("9uReBEtnYGYf1oUe4KGSt6kQhsqGE74i17NzRNEDLutn");
+            var pool = new solanaWeb3.PublicKey("3SdgUSptYW5NM4SFUYfJwV3awTG7hYJnc1T1yL519mEZ");
+            var tokenProgram = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+            var mint = new solanaWeb3.PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
+            var pda = new solanaWeb3.PublicKey("8AbwG4Cbr9DefgeF7P9Pt9RJMA1RS1KVogRWBWh9U8wM");
+            var delay = new solanaWeb3.PublicKey("Axb9d4GZ9QtMEJoRbnv75gGaos5CSeCpEpJRJsz9YPHF"); 
+            var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
+            var blankPubkey = "11111111111111111111111111111111";
+
+            function showWallet(){
+                document.getElementById("addr").innerHTML = window.solana.publicKey.toBase58();
+            }
+            window.solana.on("connect", showWallet);
+
+            async function grade(){
+                let pubkey = document.getElementById("acc").value;
+                let keyform = new solanaWeb3.PublicKey(pubkey);
+                let info = await connection.getAccountInfo(keyform);
+                
+                let betData = Array.from(info.data);
+                let id = betData.slice(0, 20);
+                let instrData = id.concat([document.getElementById("signal")]);
+                
+                let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
+                let destination = callForATA.value[0].pubkey;
+                let bettor0 = new solanaWeb3.PublicKey(betData.slice(36, 68));
+                let bettor1 = new solanaWeb3.PublicKey(betData.slice(68, 100));
+                let ataInfos = await Promise.all([
+                    connection.getTokenAccountsByOwner(bettor0, { mint: mint }),
+                    connection.getTokenAccountsByOwner(bettor1, { mint: mint })
+                ]);
+                let ata0 = ataInfos[0].value[0].pubkey;
+                let ata1 = ataInfos[1].value[0].pubkey;
+                let rentPayer = new solanaWeb3.PublicKey(betData.slice(100, 132));
+
+                let keysArr = [
+                    {pubkey: keyform, isSigner: false, isWritable: true },
+                    {pubkey: tokenProgram, isSigner: false, isWritable: false},
+                    {pubkey: pool, isSigner: false, isWritable: true },
+                    {pubkey: pda, isSigner: false, isWritable: true },
+                    {pubkey: bettor0, isSigner: false, isWritable: true },
+                    {pubkey: ata0, isSigner: false, isWritable: true },
+                    {pubkey: bettor1, isSigner: false, isWritable: true },
+                    {pubkey: ata1, isSigner: false, isWritable: true },
+                    {pubkey: rentPayer, isSigner: false, isWritable: true },
+                    {pubkey: window.solana.publicKey, isSigner: true, isWritable: true } 
+                ];
+                
+                let betInstr = new solanaWeb3.TransactionInstruction({
+                    keys: keysArr,
+                    programId: programID,
+                    data: new Uint8Array(instrData),
+                });
+                let transaction = new solanaWeb3.Transaction();
+                transaction.add(betInstr);
+                transaction.feePayer = window.solana.publicKey;
+                let blockInfo = await connection.getLatestBlockhash(); 
+                transaction.recentBlockhash = blockInfo.blockhash;
+                let signed = await window.solana.signTransaction(transaction);
+                let signature = await connection.sendRawTransaction(signed.serialize());
+                await connection.confirmTransaction(signature);
+                document.getElementById("sig").setAttribute("href", "https://explorer.solana.com/tx/" + signature + "?cluster=devnet");
+                document.getElementById("sig").innerHTML = signature;
+            }
+
+        </script>
+    </body>
+</html>
