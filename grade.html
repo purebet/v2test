@@ -35,7 +35,7 @@
                 
                 let betData = Array.from(info.data);
                 let id = betData.slice(0, 20);
-                let instrData = id.concat([parseInt(document.getElementById("signal"))]);
+                let instrData = id.concat([parseInt(document.getElementById("signal").value)]);
                 
                 let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
                 let destination = callForATA.value[0].pubkey;
