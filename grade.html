@@ -37,8 +37,6 @@
                 let id = betData.slice(0, 20);
                 let instrData = id.concat([parseInt(document.getElementById("signal").value)]);
                 
-                let callForATA = await connection.getTokenAccountsByOwner(window.solana.publicKey, { mint: mint });
-                let destination = callForATA.value[0].pubkey;
                 let bettor0 = new solanaWeb3.PublicKey(betData.slice(36, 68));
                 let bettor1 = new solanaWeb3.PublicKey(betData.slice(68, 100));
                 let ataInfos = await Promise.all([

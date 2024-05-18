@@ -153,7 +153,8 @@
                 
                 let betInstr = new solanaWeb3.TransactionInstruction({
                     keys: [
-                        {pubkey: newAcc, isSigner: false, isWritable: true },
+                        //{pubkey: newAcc, isSigner: false, isWritable: true },
+                        {pubkey: new solanaWeb3.PublicKey("2xE1bYBaKmvHgHYwKfafciy1xCMMThzBb2H1af6nAx1J"), isSigner: false, isWritable: true},
                         {pubkey: tokenProgram, isSigner: false, isWritable: false},
                         {pubkey: source, isSigner: false, isWritable: true },
                         {pubkey: pool, isSigner: false, isWritable: true},

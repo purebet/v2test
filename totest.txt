@@ -1,18 +1,20 @@
-partial match with different rent payer
-partial matching with low stakes (1 one millionth)
-matching a bet on the wrong side
-wrong token account (start, match, partial match)
-wrong pool account (start, match partial match)
-match bet with different fee payer
-cancel bet with wrong bettor
-cancel a free bet sends tokens to correct bettor
-partial match with to aggregate true only lets pbmm match
-bets with to aggregate false let any wallet match
-bets with to aggregate false let any wallet partial match
-set delay tx change existing delay acc with admin 
 create new delay acc without admin
 cancel a matched bet fails
 cancel aggregated bet without cancelation delay account fails
+canceling someone else's bet fails
+
+partial match with different rent payer
+matching a bet on the wrong side
+wrong token account (start, match, partial match)
+wrong pool account (match partial match)
+match bet with different fee payer
+cancel bet with wrong bettor
+cancel a free bet sends tokens to correct bettor
+
+bets with to aggregate false let any wallet match
+bets with to aggregate false let any wallet partial match
+set delay tx change existing delay acc with admin 
+
 cancel non aggregated bet without cancelation delay account 
 refunding matched bet fails
 refunding sends to correct wallet in normal circumstance

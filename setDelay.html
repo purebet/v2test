@@ -1,0 +1,85 @@
+<html>
+    <head>
+        <title> Set the delay that a bettor must wait before canceling their bet. </title>
+    </head>
+    <body>
+        <button onclick = "window.solana.connect()"> Connect Wallet </button>
+        <p id = "addr"> </p>
+        <h1> Admin pubkey must be GfAjAjpesvWYHDTNLUQ7ES9YkSPiuHGK5dAzGsPptetk </h1>
+        <h2> Seconds to delay </h2>
+        <input type = "text" id = "seconds" />
+        <button onclick = "setDelay()"> Set the Delay </button>
+        <h1> <a id = "sig" target = "_blank"> tx sig shows up here</a></h1>
+
+        <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+        <script>
+            var programID = new solanaWeb3.PublicKey("9uReBEtnYGYf1oUe4KGSt6kQhsqGE74i17NzRNEDLutn");
+            var connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
+            var blankPubkey = "11111111111111111111111111111111";
+
+            function showWallet(){
+                document.getElementById("addr").innerHTML = window.solana.publicKey.toBase58();
+            }
+            window.solana.on("connect", showWallet);
+
+            async function genAccInstr(){
+                let rentExemptVal = 1000000000 * 0.0009048;
+                let seed = 'purebetDelay' + Math.random() * 1000000000000;
+                let newAcc = await solanaWeb3.PublicKey.createWithSeed(window.solana.publicKey, seed, programID);
+                return {
+                    pubkey: newAcc,
+                    instr: solanaWeb3.SystemProgram.createAccountWithSeed({
+                        fromPubkey: window.solana.publicKey,
+                        basePubkey: window.solana.publicKey,
+                        seed: seed,
+                        newAccountPubkey: newAcc,
+                        lamports: rentExemptVal,
+                        space: 2,
+                        programId: programID,
+                    })
+                }
+            }
+            async function setDelay(){
+                let delayAccs = await connection.getProgramAccounts(programID, {filters: [{dataSize: 2}]});
+                let tx = new solanaWeb3.Transaction();
+                let delayAcc;
+                if(delayAccs.length == 0){
+                    let rentExemptVal = 1000000000 * 0.0009048;
+                    let seed = 'purebetDelay' + Math.random() * 1000000000000;
+                    let newAcc = await solanaWeb3.PublicKey.createWithSeed(window.solana.publicKey, seed, programID);
+                    delayAcc = newAcc;
+                    tx.add(solanaWeb3.SystemProgram.createAccountWithSeed({
+                        fromPubkey: window.solana.publicKey,
+                        basePubkey: window.solana.publicKey,
+                        seed: seed,
+                        newAccountPubkey: newAcc,
+                        lamports: rentExemptVal,
+                        space: 2,
+                        programId: programID,
+                    }));
+                }
+                else{
+                    delayAcc = delayAccs[0].pubkey;
+                }
+                let setDelayInstr = new solanaWeb3.TransactionInstruction({
+                    keys: [
+                        {pubkey: delayAcc, isSigner: false, isWritable: true },
+                        {pubkey: window.solana.publicKey, isSigner: true, isWritable: false}
+                    ],
+                    programId: programID,
+                    data: new Uint8Array([parseInt(document.getElementById("seconds").value)]),
+                });
+                tx.add(setDelayInstr);
+                tx.feePayer = window.solana.publicKey;
+                let blockInfo = await connection.getLatestBlockhash(); 
+                tx.recentBlockhash = blockInfo.blockhash;
+                let signed = await window.solana.signTransaction(tx);
+                let signature = await connection.sendRawTransaction(signed.serialize());
+                await connection.confirmTransaction(signature);
+                document.getElementById("sig").setAttribute("href", "https://explorer.solana.com/tx/" + signature + "?cluster=devnet");
+                document.getElementById("sig").innerHTML = signature;
+            }
+
+        </script>
+    </body>
+</html>
