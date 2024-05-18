@@ -44,6 +44,7 @@
                 let tx = new solanaWeb3.Transaction();
                 let delayAcc;
                 if(delayAccs.length == 0){
+                //if(delayAccs.length == 1){
                     let rentExemptVal = 1000000000 * 0.0009048;
                     let seed = 'purebetDelay' + Math.random() * 1000000000000;
                     let newAcc = await solanaWeb3.PublicKey.createWithSeed(window.solana.publicKey, seed, programID);

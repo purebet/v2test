@@ -1,14 +1,8 @@
-create new delay acc without admin
-cancel a matched bet fails
-cancel aggregated bet without cancelation delay account fails
-canceling someone else's bet fails
-
 partial match with different rent payer
 matching a bet on the wrong side
 wrong token account (start, match, partial match)
 wrong pool account (match partial match)
 match bet with different fee payer
-cancel bet with wrong bettor
 cancel a free bet sends tokens to correct bettor
 
 bets with to aggregate false let any wallet match
