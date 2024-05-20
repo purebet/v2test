@@ -4,6 +4,7 @@
     </head>
     <body>
         <button onclick = "window.solana.connect()"> Connect Wallet </button>
+        <button onclick = "solflareConnect()"> Connect to Solflare if phantom sucks </button>
         <p id = "addr"> </p>
         <h1> Admin pubkey must be GfAjAjpesvWYHDTNLUQ7ES9YkSPiuHGK5dAzGsPptetk </h1>
         <h2> Seconds to delay </h2>
@@ -21,6 +22,11 @@
                 document.getElementById("addr").innerHTML = window.solana.publicKey.toBase58();
             }
             window.solana.on("connect", showWallet);
+
+            function solflareConnect(){
+                await window.solflare.connect();
+                document.getElementById("addr").innerHTML = window.solflare.publicKey.toBase58();
+            }
 
             async function genAccInstr(){
                 let rentExemptVal = 1000000000 * 0.0009048;
@@ -74,7 +80,8 @@
                 tx.feePayer = window.solana.publicKey;
                 let blockInfo = await connection.getLatestBlockhash(); 
                 tx.recentBlockhash = blockInfo.blockhash;
-                let signed = await window.solana.signTransaction(tx);
+                let signed = await window.solflare.signTransaction(tx);
+                //let signed = await window.solana.signTransaction(tx);
                 let signature = await connection.sendRawTransaction(signed.serialize());
                 await connection.confirmTransaction(signature);
                 document.getElementById("sig").setAttribute("href", "https://explorer.solana.com/tx/" + signature + "?cluster=devnet");
