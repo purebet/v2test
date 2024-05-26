@@ -33,12 +33,13 @@ window.refund = async () => {
     const info = await connection.getAccountInfo(keyform);    
     const betData = Array.from(info.data);
     const side = isEmpty(betData.slice(36, 68)) ? 1 : 0;
-    const betInstr = await getRefundInstruction(betData, side, true);
+    const betInstr = await getRefundInstruction(betData, side, keyform, true);
     const transaction = new solanaWeb3.Transaction();
     const blockInfo = await connection.getLatestBlockhash();
 
     transaction.add(betInstr);
     transaction.recentBlockhash = blockInfo.blockhash;
+    transaction.feePayer = window.solana.publicKey;
 
     const signature = await sendRefundTransaction(transaction);
     document.getElementById("sig1").setAttribute("href", "https://explorer.solana.com/tx/" + signature + "?cluster=devnet");
@@ -68,16 +69,17 @@ window.refundAll = async () => {
     }
 
     */
-    const eventID = 184076394n;
-    // const eventID = BigInt(document.getElementById('eventID').value);
+    // const eventID = 184076394n;
+    const eventID = BigInt(document.getElementById('eventID').value);
     const memcmp = {
         bytes: Base58.encode(new Uint8Array(new BigUint64Array([eventID]).buffer)),
         offset: 5
     };
     const res = await connection.getProgramAccounts(programID, { filters: [{memcmp}] });
     const ixPromises = [];
+    console.log(res);
 
-    for (const {account} of res) {
+    for (const {account, pubkey} of res) {
         const betData = Array.from(account.data);
         let side = 0;
 
@@ -85,7 +87,7 @@ window.refundAll = async () => {
         else if (isEmpty(betData.slice(68, 100))) {}
         else continue;
 
-        ixPromises.push(getRefundInstruction(betData, side));
+        ixPromises.push(getRefundInstruction(betData, side, pubkey));
     }
 
     document.getElementById('betCount').textContent = `Found ${ixPromises.length} bets to refund`;
@@ -99,7 +101,8 @@ window.refundAll = async () => {
 
     while (ixList.length) {
         const tx = new solanaWeb3.Transaction();
-        tx.recentBlockhash = blockInfo.blockhash;
+        tx.recentBlockhash = blockInfo.blockhash;        
+        tx.feePayer = window.solana.publicKey;
 
         while (ixList.length) {
             tx.add(ixList.pop());
@@ -117,7 +120,7 @@ window.refundAll = async () => {
     console.log(await Promise.all(signatures));
 };
 
-async function getRefundInstruction(betData, side, shouldPrint) {
+async function getRefundInstruction(betData, side, keyform, shouldPrint) {
     let id = betData.slice(0, 20);
     let instrData = id.concat([side, 1]);    
     let solTo = new solanaWeb3.PublicKey(betData.slice(100, 132));
@@ -153,7 +156,6 @@ async function getRefundInstruction(betData, side, shouldPrint) {
 }
 
 async function sendRefundTransaction(transaction) {
-    transaction.feePayer = window.solana.publicKey;
     let signed = await window.solana.signTransaction(transaction);
     let signature = await connection.sendRawTransaction(signed.serialize());
     await connection.confirmTransaction(signature);
