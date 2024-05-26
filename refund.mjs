@@ -68,9 +68,10 @@ window.refundAll = async () => {
     }
 
     */
-    const eventID = BigInt(document.getElementById('eventID').value);
+    const eventID = 184076394n;
+    // const eventID = BigInt(document.getElementById('eventID').value);
     const memcmp = {
-        bytes: Base58.encode(new Uint8Array(new BigUint64Array(eventID).buffer)),
+        bytes: Base58.encode(new Uint8Array(new BigUint64Array([eventID]).buffer)),
         offset: 5
     };
     const res = await connection.getProgramAccounts(programID, { filters: [{memcmp}] });
@@ -126,7 +127,7 @@ async function getRefundInstruction(betData, side, shouldPrint) {
         addrStart = side == 0 ? 36 : 68;
     }
     
-    let tokenTo = new solanaWeb3.PublicKey(accData.slice(addrStart, addrStart + 32));
+    let tokenTo = new solanaWeb3.PublicKey(betData.slice(addrStart, addrStart + 32));
 
     if (shouldPrint) {
         document.getElementById("rentTo").innerHTML = solTo.toBase58();
