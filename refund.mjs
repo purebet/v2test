@@ -1,9 +1,10 @@
 const programID = new solanaWeb3.PublicKey("9uReBEtnYGYf1oUe4KGSt6kQhsqGE74i17NzRNEDLutn");
-const pool = new solanaWeb3.PublicKey("3SdgUSptYW5NM4SFUYfJwV3awTG7hYJnc1T1yL519mEZ");
 const tokenProgram = new solanaWeb3.PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-const mint = new solanaWeb3.PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
+const pool = new solanaWeb3.PublicKey("3SdgUSptYW5NM4SFUYfJwV3awTG7hYJnc1T1yL519mEZ");
 const pda = new solanaWeb3.PublicKey("8AbwG4Cbr9DefgeF7P9Pt9RJMA1RS1KVogRWBWh9U8wM");
-const connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
+
+let mint = new solanaWeb3.PublicKey("Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr");
+let connection = new solanaWeb3.Connection("https://api.devnet.solana.com");
 
 const cluster = {
     devnet: {
@@ -77,7 +78,6 @@ window.refundAll = async () => {
     };
     const res = await connection.getProgramAccounts(programID, { filters: [{memcmp}] });
     const ixPromises = [];
-    console.log(res);
 
     for (const {account, pubkey} of res) {
         const betData = Array.from(account.data);
