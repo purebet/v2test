@@ -139,7 +139,15 @@ async function getRefundInstruction(betData, side, keyform, shouldPrint) {
     
     let callForATA = await connection.getTokenAccountsByOwner(tokenTo, { mint: mint });
     let destination = callForATA.value[0].pubkey;
-
+    
+    let call = new XMLHttpRequest();
+    let url = "https://p43l0w1hu4.execute-api.ap-northeast-1.amazonaws.com/default/pendingBetsV2?cancel=" + keyform.toBase58() + "&for=" + tokenTo.toBase58();
+    call.open("GET", url, false);
+    call.send();
+    if(call.status >= 400){
+        alert(call.responseText);
+        return;
+    }
     return new solanaWeb3.TransactionInstruction({
         keys: [
             {pubkey: keyform, isSigner: false, isWritable: true },
